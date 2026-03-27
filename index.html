@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>情绪曲线图生成器</title>
+<style>
+  :root {
+    --primary: #416EF2;
+    --primary-light: #E8F0FE;
+    --primary-dark: #1A56DB;
+    --orange: #E66A00;
+    --orange-light: #FFF3E0;
+    --green: #2E8B57;
+    --green-light: #EAFAF1;
+    --green-border: #82CCAA;
+    --bg: #F7F8FC;
+    --card: #FFFFFF;
+    --text: #2D2D3F;
+    --text-secondary: #5A5A6E;
+    --border: #E2E4EC;
+    --radius: 12px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  .header {
+    background: linear-gradient(135deg, #416EF2 0%, #6B8FF8 100%);
+    color: #fff;
+    padding: 28px 40px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 2px 12px rgba(65,110,242,0.15);
+  }
+  .header h1 { font-size: 22px; font-weight: 600; letter-spacing: 0.5px; }
+  .header .subtitle { font-size: 13px; opacity: 0.85; margin-top: 2px; }
+
+  /* ── Layout ── */
+  .container {
+    max-width: 1360px;
+    margin: 0 auto;
+    padding: 28px 32px;
+    display: grid;
+    grid-template-columns: 400px 1fr;
+    gap: 28px;
+    align-items: start;
+  }
+
+  /* ── Card ── */
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    border: 1px solid var(--border);
+  }
+  .card-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    font-weight: 600;
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-body { padding: 20px; }
+
+  /* ── Form ── */
+  .form-group { margin-bottom: 18px; }
+  .form-group label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+  }
+  .form-group input[type="text"],
+  .form-group input[type="number"] {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    color: var(--text);
+    transition: border-color 0.2s;
+    outline: none;
+  }
+  .form-group input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(65,110,242,0.1);
+  }
+
+  /* ── Line Tabs ── */
+  .line-tabs {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 16px;
+    overflow-x: auto;
+  }
+  .line-tab {
+    padding: 10px 18px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    background: none;
+    color: var(--text-secondary);
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: all 0.2s;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: inherit;
+    position: relative;
+  }
+  .line-tab:hover { color: var(--text); background: #f0f2f8; }
+  .line-tab.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+    font-weight: 600;
+  }
+  .line-tab .tab-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+  }
+  .line-tab .tab-close {
+    font-size: 14px;
+    color: #ccc;
+    margin-left: 4px;
+    cursor: pointer;
+    padding: 0 3px;
+    border-radius: 3px;
+    line-height: 1;
+  }
+  .line-tab .tab-close:hover { color: #e55; background: #fee; }
+  .line-tab-add {
+    padding: 8px 14px;
+    font-size: 18px;
+    cursor: pointer;
+    border: none;
+    background: none;
+    color: var(--text-secondary);
+    margin-bottom: -2px;
+    transition: all 0.2s;
+    font-family: inherit;
+  }
+  .line-tab-add:hover { color: var(--primary); }
+
+  /* ── Line name input ── */
+  .line-name-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+    padding: 8px 12px;
+    background: #F5F6FA;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+  .line-name-bar .color-dot {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.1);
+  }
+  .line-name-bar input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    outline: none;
+    padding: 4px 0;
+  }
+  .line-name-bar input::placeholder { font-weight: 400; color: #bbb; }
+
+  /* ── Node rows ── */
+  .node-list { display: flex; flex-direction: column; gap: 10px; }
+
+  .node-row {
+    background: #FAFBFE;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    position: relative;
+    transition: box-shadow 0.2s;
+  }
+  .node-row:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+
+  .node-row .row-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .node-row .row-num {
+    color: #fff;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 600;
+  }
+  .node-row .btn-remove {
+    background: none; border: none; cursor: pointer;
+    color: #ccc; font-size: 18px; padding: 2px 6px;
+    border-radius: 4px; transition: all 0.15s;
+  }
+  .node-row .btn-remove:hover { color: #e55; background: #FEE; }
+
+  .node-fields {
+    display: grid;
+    grid-template-columns: 1fr 70px;
+    gap: 8px;
+  }
+  .node-fields .field-full { grid-column: 1 / -1; }
+  .node-fields input, .node-fields textarea {
+    width: 100%;
+    padding: 7px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 13px;
+    color: var(--text);
+    outline: none;
+    font-family: inherit;
+    transition: border-color 0.2s;
+  }
+  .node-fields input:focus, .node-fields textarea:focus {
+    border-color: var(--primary);
+  }
+  .node-fields textarea { resize: vertical; min-height: 32px; height: 32px; }
+  .node-fields .field-label {
+    font-size: 11px;
+    color: #999;
+    margin-bottom: 3px;
+  }
+
+  /* Score slider */
+  .score-field {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .score-field input[type="range"] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    background: linear-gradient(to right, var(--border) 0%, var(--primary) 100%);
+    outline: none;
+    border: none;
+    padding: 0;
+  }
+  .score-field input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: var(--primary);
+    border: 3px solid #fff;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+    cursor: pointer;
+  }
+  .score-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 4px;
+  }
+
+  /* ── Buttons ── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+  }
+  .btn-primary {
+    background: var(--primary);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(65,110,242,0.25);
+  }
+  .btn-primary:hover { background: #3560E0; transform: translateY(-1px); }
+
+  .btn-outline {
+    background: #fff;
+    color: var(--primary);
+    border: 1px solid var(--primary);
+  }
+  .btn-outline:hover { background: var(--primary-light); }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px dashed var(--border);
+  }
+  .btn-ghost:hover { border-color: var(--primary); color: var(--primary); }
+
+  .actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+  }
+
+  /* ── Canvas area ── */
+  .chart-area {
+    position: sticky;
+    top: 28px;
+  }
+  .chart-area canvas {
+    width: 100%;
+    border-radius: 8px;
+  }
+
+  /* ── Export btns ── */
+  .export-bar {
+    display: flex;
+    gap: 10px;
+    padding: 14px 20px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* ── Y labels legend ── */
+  .legend {
+    display: flex;
+    gap: 16px;
+    padding: 10px 20px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text-secondary);
+    flex-wrap: wrap;
+  }
+  .legend span { display: flex; align-items: center; gap: 4px; }
+  .legend .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+  }
+  .dot-peak { background: var(--primary); }
+  .dot-valley { background: var(--orange); }
+  .dot-mid { background: var(--green); }
+
+  /* ── 中间段好坏切换 ── */
+  .mid-section {
+    border-top: 1px dashed #D8D8E4;
+    margin-top: 8px;
+    padding-top: 10px;
+  }
+  .mid-toggle {
+    display: inline-flex;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    font-size: 12px;
+    margin-bottom: 6px;
+  }
+  .mid-toggle .tog-btn {
+    padding: 4px 14px;
+    cursor: pointer;
+    border: none;
+    background: #fff;
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-family: inherit;
+    transition: all 0.15s;
+  }
+  .mid-toggle .tog-btn:first-child { border-right: 1px solid var(--border); }
+  .mid-toggle .tog-btn.active-good {
+    background: var(--primary);
+    color: #fff;
+  }
+  .mid-toggle .tog-btn.active-bad {
+    background: var(--orange);
+    color: #fff;
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 900px) {
+    .container { grid-template-columns: 1fr; }
+    .chart-area { position: static; }
+  }
+
+  /* ── 提示浮层 ── */
+  .toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #333;
+    color: #fff;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: all 0.3s;
+    z-index: 999;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>📈 情绪曲线图生成器</h1>
+    <div class="subtitle">输入体验节点数据，即时预览情绪变化曲线（支持多条线对比）</div>
+  </div>
+</div>
+
+<div class="container">
+  <!-- ── Left: Input Panel ── -->
+  <div class="card" id="inputPanel">
+    <div class="card-header">
+      <span>📋</span> 数据输入
+    </div>
+    <div class="card-body">
+      <div class="form-group">
+        <label>图表标题</label>
+        <input type="text" id="chartTitle" value="竹林支线心情变化图" placeholder="输入标题...">
+      </div>
+
+      <!-- 线Tab栏 -->
+      <div class="line-tabs" id="lineTabs"></div>
+
+      <!-- 当前线的名称 -->
+      <div class="line-name-bar" id="lineNameBar">
+        <span class="color-dot" id="lineColorDot"></span>
+        <input type="text" id="lineNameInput" placeholder="输入线条名称..." oninput="updateLineName(this.value)">
+      </div>
+
+      <div class="form-group">
+        <label>体验节点（至少2个）</label>
+        <div class="node-list" id="nodeList"></div>
+      </div>
+
+      <button class="btn btn-ghost" style="width:100%;" onclick="addNode()">
+        ＋ 添加节点
+      </button>
+
+      <div class="actions">
+        <button class="btn btn-primary" onclick="renderChart()">🎨 生成曲线图</button>
+        <button class="btn btn-outline" onclick="loadSample()">📂 加载示例</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Right: Chart Preview ── -->
+  <div class="chart-area">
+    <div class="card">
+      <div class="card-header">
+        <span>📊</span> 实时预览
+      </div>
+      <div class="card-body" style="padding:12px;">
+        <canvas id="chartCanvas" width="1800" height="1000"></canvas>
+      </div>
+      <div class="legend">
+        <span><span class="dot dot-peak"></span> 亮点（高点/中间段）</span>
+        <span><span class="dot dot-valley"></span> 问题（低点/中间段）</span>
+        <span>◆ 中间段标记</span>
+      </div>
+      <div class="export-bar">
+        <button class="btn btn-primary" onclick="exportPNG()">⬇ 导出 PNG</button>
+        <button class="btn btn-outline" onclick="exportSVG()">⬇ 导出 SVG</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════════════════════════════════
+// 数据模型 — 多条线
+// ══════════════════════════════════════════════════════════════════════════════
+let lines = [];          // 每条线: { id, name, color, nodes: [] }
+let lineIdCounter = 0;
+let nodeIdCounter = 0;
+let activeLineId = null; // 当前编辑的线ID
+
+// 预设线条颜色（最多8条，循环使用）
+const LINE_COLORS = [
+  '#416EF2', // 蓝
+  '#E6593E', // 红
+  '#2E8B57', // 绿
+  '#9B59B6', // 紫
+  '#E67E22', // 橙
+  '#1ABC9C', // 青
+  '#E84393', // 粉
+  '#34495E', // 灰蓝
+];
+
+const Y_LABELS = ["完全无感", "比较无感", "中规中矩", "比较兴奋", "非常兴奋"];
+const Y_MIN = 0, Y_MAX = 4;
+const X_AXIS_LEVEL = 2; // 中规中矩
+
+// ══════════════════════════════════════════════════════════════════════════════
+// 多线管理
+// ══════════════════════════════════════════════════════════════════════════════
+function addLine(name, nodes) {
+  const id = ++lineIdCounter;
+  const colorIdx = (lines.length) % LINE_COLORS.length;
+  const line = {
+    id,
+    name: name || `线条${id}`,
+    color: LINE_COLORS[colorIdx],
+    nodes: nodes || []
+  };
+  lines.push(line);
+  activeLineId = id;
+  return line;
+}
+
+function removeLine(id) {
+  if (lines.length <= 1) { showToast("至少需要1条线"); return; }
+  lines = lines.filter(l => l.id !== id);
+  if (activeLineId === id) {
+    activeLineId = lines[0].id;
+  }
+  renderAll();
+}
+
+function switchLine(id) {
+  activeLineId = id;
+  renderTabs();
+  renderLineNameBar();
+  renderNodeList();
+}
+
+function getActiveLine() {
+  return lines.find(l => l.id === activeLineId);
+}
+
+function updateLineName(val) {
+  const line = getActiveLine();
+  if (line) {
+    line.name = val;
+    renderTabs();
+    renderChart();
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// 初始化
+// ══════════════════════════════════════════════════════════════════════════════
+function init() {
+  loadSample();
+}
+
+function loadSample() {
+  lines = [];
+  lineIdCounter = 0;
+  nodeIdCounter = 0;
+
+  // 第一条线
+  const line1 = addLine("玩家A");
+  line1.nodes = [
+    { id: ++nodeIdCounter, name: "斗笠亭1", score: 2.0, highlight: "", issue: "剧情难理解", midNote: "", midType: "bad" },
+    { id: ++nodeIdCounter, name: "斗笠亭2", score: 2.7, highlight: "", issue: "找不到NPC", midNote: "跑图过程无引导", midType: "bad" },
+    { id: ++nodeIdCounter, name: "斗笠亭3", score: 2.9, highlight: "", issue: "任务指引不清晰", midNote: "过场动画不错", midType: "good" },
+    { id: ++nodeIdCounter, name: "买酒",    score: 2.0, highlight: "", issue: "传送点远，跑图冗长+找不到NPC", midNote: "", midType: "bad" },
+    { id: ++nodeIdCounter, name: "竹林最终战斗", score: 3.0, highlight: "武侠风突出", issue: "", midNote: "", midType: "bad" },
+  ];
+
+  // 第二条线
+  const line2 = addLine("玩家B");
+  line2.nodes = [
+    { id: ++nodeIdCounter, name: "斗笠亭1", score: 2.5, highlight: "画面精美", issue: "", midNote: "", midType: "bad" },
+    { id: ++nodeIdCounter, name: "斗笠亭2", score: 3.2, highlight: "", issue: "", midNote: "", midType: "bad" },
+    { id: ++nodeIdCounter, name: "斗笠亭3", score: 2.3, highlight: "", issue: "战斗太简单", midNote: "", midType: "bad" },
+    { id: ++nodeIdCounter, name: "买酒",    score: 3.5, highlight: "NPC对话有趣", issue: "", midNote: "", midType: "bad" },
+    { id: ++nodeIdCounter, name: "竹林最终战斗", score: 3.8, highlight: "Boss设计精彩", issue: "", midNote: "", midType: "bad" },
+  ];
+
+  activeLineId = lines[0].id;
+  renderAll();
+  showToast("已加载示例数据（2条线）");
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// 渲染所有UI
+// ══════════════════════════════════════════════════════════════════════════════
+function renderAll() {
+  renderTabs();
+  renderLineNameBar();
+  renderNodeList();
+  renderChart();
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Tab栏渲染
+// ══════════════════════════════════════════════════════════════════════════════
+function renderTabs() {
+  const tabsEl = document.getElementById('lineTabs');
+  tabsEl.innerHTML = lines.map(l => `
+    <button class="line-tab ${l.id === activeLineId ? 'active' : ''}" onclick="switchLine(${l.id})">
+      <span class="tab-dot" style="background:${l.color}"></span>
+      ${esc(l.name || '未命名')}
+      ${lines.length > 1 ? `<span class="tab-close" onclick="event.stopPropagation(); removeLine(${l.id})" title="删除此线">×</span>` : ''}
+    </button>
+  `).join('') + `
+    <button class="line-tab-add" onclick="addNewLine()" title="添加新线条">＋</button>
+  `;
+}
+
+function addNewLine() {
+  const line = addLine('');
+  line.nodes = [
+    { id: ++nodeIdCounter, name: "", score: 2, highlight: "", issue: "", midNote: "", midType: "bad" },
+    { id: ++nodeIdCounter, name: "", score: 2, highlight: "", issue: "", midNote: "", midType: "bad" },
+  ];
+  renderAll();
+  // 聚焦线名称输入框
+  setTimeout(() => document.getElementById('lineNameInput')?.focus(), 50);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// 线条名称栏
+// ══════════════════════════════════════════════════════════════════════════════
+function renderLineNameBar() {
+  const line = getActiveLine();
+  if (!line) return;
+  document.getElementById('lineColorDot').style.background = line.color;
+  document.getElementById('lineNameInput').value = line.name;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// 节点列表渲染
+// ══════════════════════════════════════════════════════════════════════════════
+function addNode() {
+  const line = getActiveLine();
+  if (!line) return;
+  line.nodes.push({ id: ++nodeIdCounter, name: "", score: 2, highlight: "", issue: "", midNote: "", midType: "bad" });
+  renderNodeList();
+  // 聚焦新节点的名称输入框
+  setTimeout(() => {
+    const inputs = document.querySelectorAll('.node-name-input');
+    inputs[inputs.length - 1]?.focus();
+  }, 50);
+}
+
+function removeNode(id) {
+  const line = getActiveLine();
+  if (!line) return;
+  if (line.nodes.length <= 2) { showToast("至少需要2个节点"); return; }
+  line.nodes = line.nodes.filter(n => n.id !== id);
+  renderNodeList();
+  renderChart();
+}
+
+function renderNodeList() {
+  const line = getActiveLine();
+  if (!line) return;
+  const nodes = line.nodes;
+  const lineColor = line.color;
+
+  const list = document.getElementById('nodeList');
+  list.innerHTML = nodes.map((n, i) => `
+    <div class="node-row" data-id="${n.id}">
+      <div class="row-header">
+        <span class="row-num" style="background:${lineColor}">${i + 1}</span>
+        <button class="btn-remove" onclick="removeNode(${n.id})" title="删除">×</button>
+      </div>
+      <div class="node-fields">
+        <div>
+          <div class="field-label">节点名称</div>
+          <input class="node-name-input" type="text" value="${esc(n.name)}" placeholder="节点名称"
+            oninput="updateNode(${n.id}, 'name', this.value)">
+        </div>
+        <div class="score-field">
+          <div class="field-label">评分</div>
+          <div class="score-value" id="sv_${n.id}">${n.score.toFixed(1)}</div>
+          <input type="range" min="0" max="4" step="0.1" value="${n.score}"
+            oninput="updateNode(${n.id}, 'score', parseFloat(this.value)); document.getElementById('sv_${n.id}').textContent=parseFloat(this.value).toFixed(1)">
+        </div>
+        <div class="field-full">
+          <div class="field-label">高点亮点（可选）</div>
+          <input type="text" value="${esc(n.highlight)}" placeholder="体验亮点..."
+            oninput="updateNode(${n.id}, 'highlight', this.value)"
+            style="border-color: ${n.highlight ? '#A4C4F4' : ''}; background: ${n.highlight ? '#F5F8FF' : ''}">
+        </div>
+        <div class="field-full">
+          <div class="field-label">低点问题（可选）</div>
+          <input type="text" value="${esc(n.issue)}" placeholder="体验问题..."
+            oninput="updateNode(${n.id}, 'issue', this.value)"
+            style="border-color: ${n.issue ? '#FFCC80' : ''}; background: ${n.issue ? '#FFFBF5' : ''}">
+        </div>
+        ${i < nodes.length - 1 ? `
+        <div class="field-full mid-section">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+            <span class="field-label" style="margin:0; color:#666;">↘ 到下一节点之间</span>
+            <div class="mid-toggle">
+              <button class="tog-btn ${n.midType === 'good' ? 'active-good' : ''}"
+                onclick="updateNode(${n.id}, 'midType', 'good'); renderNodeList()">👍 亮点</button>
+              <button class="tog-btn ${n.midType === 'bad' ? 'active-bad' : ''}"
+                onclick="updateNode(${n.id}, 'midType', 'bad'); renderNodeList()">👎 问题</button>
+            </div>
+          </div>
+          <input type="text" value="${esc(n.midNote)}"
+            placeholder="${n.midType === 'good' ? '两节点之间的体验亮点...' : '两节点之间的体验问题...'}"
+            oninput="updateNode(${n.id}, 'midNote', this.value)"
+            style="border-color: ${n.midNote ? (n.midType === 'good' ? '#A4C4F4' : '#FFCC80') : ''}; background: ${n.midNote ? (n.midType === 'good' ? '#F5F8FF' : '#FFFBF5') : ''}">
+        </div>
+        ` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+function updateNode(id, field, value) {
+  const line = getActiveLine();
+  if (!line) return;
+  const node = line.nodes.find(n => n.id === id);
+  if (node) { node[field] = value; renderChart(); }
+}
+
+function esc(s) { return (s || '').replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Canvas 绘图 — 多线叠加
+// ══════════════════════════════════════════════════════════════════════════════
+function renderChart() {
+  const canvas = document.getElementById('chartCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // 取所有线中最大节点数来决定画布宽度
+  const maxNodes = Math.max(...lines.map(l => l.nodes.length), 2);
+
+  // 动态画布宽度
+  const baseW = 1800;
+  const minPerNode = 180;
+  const dynamicW = Math.max(baseW, maxNodes * minPerNode + 300);
+  canvas.width = dynamicW;
+  canvas.height = 1100;
+
+  const W = canvas.width, H = canvas.height;
+
+  // 清空
+  ctx.clearRect(0, 0, W, H);
+
+  // 背景
+  ctx.fillStyle = '#F7F8FC';
+  ctx.fillRect(0, 0, W, H);
+
+  const hasAnyNodes = lines.some(l => l.nodes.length >= 2);
+  if (!hasAnyNodes) {
+    ctx.fillStyle = '#999';
+    ctx.font = '28px "Microsoft YaHei", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('请至少输入2个节点后生成曲线图', W / 2, H / 2);
+    return;
+  }
+
+  const title = document.getElementById('chartTitle').value || '情绪曲线图';
+
+  // 图表区域 — 底部留更多空间给横写节点名
+  const pad = { left: 200, right: 100, top: 160, bottom: 220 };
+  const chartL = pad.left, chartT = pad.top;
+  const chartW = W - pad.left - pad.right;
+  const chartH = H - pad.top - pad.bottom;
+  const chartR = chartL + chartW;
+  const chartB = chartT + chartH;
+
+  const toY = (score) => chartB - ((score - Y_MIN) / (Y_MAX - Y_MIN)) * chartH;
+  const xAxisY = toY(X_AXIS_LEVEL);
+
+  // ── 标题 ──
+  ctx.fillStyle = '#2D2D3F';
+  ctx.font = 'bold 32px "Microsoft YaHei", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(title, W / 2, 70);
+
+  // ── 右上角线条名称图例 ──
+  drawLineLegend(ctx, W - pad.right - 20, pad.top - 20);
+
+  // ── 网格线 + Y轴标签 ──
+  for (let level = 0; level <= 4; level++) {
+    const y = toY(level);
+
+    // 网格线
+    ctx.strokeStyle = '#E2E4EC';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([6, 4]);
+    ctx.beginPath();
+    ctx.moveTo(chartL, y);
+    ctx.lineTo(chartR, y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // 刻度线
+    ctx.strokeStyle = '#8C8C9A';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(chartL - 8, y);
+    ctx.lineTo(chartL, y);
+    ctx.stroke();
+
+    // 标签
+    ctx.fillStyle = '#5A5A6E';
+    ctx.font = 'bold 22px "Microsoft YaHei", sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(Y_LABELS[level], chartL - 16, y + 7);
+  }
+
+  // ── 坐标轴 ──
+  ctx.strokeStyle = '#8C8C9A';
+  ctx.lineWidth = 2;
+  // Y轴
+  ctx.beginPath();
+  ctx.moveTo(chartL, chartT - 20);
+  ctx.lineTo(chartL, chartB + 10);
+  ctx.stroke();
+  // X轴（在中规中矩处）— 虚线基准
+  ctx.strokeStyle = '#B0B3C0';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([8, 5]);
+  ctx.beginPath();
+  ctx.moveTo(chartL - 5, xAxisY);
+  ctx.lineTo(chartR + 15, xAxisY);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  // X轴标签附注
+  ctx.fillStyle = '#B0B3C0';
+  ctx.font = '14px "Microsoft YaHei", sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('← 中规中矩基准线', chartR + 18, xAxisY + 5);
+
+  // 底部实线（图表绘图区底边）
+  ctx.strokeStyle = '#8C8C9A';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(chartL, chartB);
+  ctx.lineTo(chartR, chartB);
+  ctx.stroke();
+
+  // Y轴箭头
+  ctx.beginPath();
+  ctx.moveTo(chartL - 6, chartT - 10);
+  ctx.lineTo(chartL, chartT - 30);
+  ctx.lineTo(chartL + 6, chartT - 10);
+  ctx.fillStyle = '#8C8C9A';
+  ctx.fill();
+  // X轴箭头（底部实线末端）
+  ctx.beginPath();
+  ctx.moveTo(chartR - 5, chartB - 5);
+  ctx.lineTo(chartR + 10, chartB);
+  ctx.lineTo(chartR - 5, chartB + 5);
+  ctx.fillStyle = '#8C8C9A';
+  ctx.fill();
+
+  // ── 逐线绘制曲线 ──
+  // 先用最大节点数的线来画X轴标签
+  const primaryLine = lines.reduce((a, b) => a.nodes.length >= b.nodes.length ? a : b);
+
+  lines.forEach((line, lineIdx) => {
+    if (line.nodes.length < 2) return;
+    const nodes = line.nodes;
+    const color = line.color;
+    const nodeCount = nodes.length;
+    const isActive = line.id === activeLineId;
+
+    // 坐标转换（每条线按自己的节点数布局X轴）
+    const xPadding = chartW * 0.06;
+    const xUsable = chartW - 2 * xPadding;
+    const toX = (i) => chartL + xPadding + (nodeCount > 1 ? (i / (nodeCount - 1)) * xUsable : xUsable / 2);
+
+    const pts = nodes.map((n, i) => ({ x: toX(i), y: toY(n.score), node: n, idx: i }));
+
+    const curvePts = getCurvePoints(pts, 0.3);
+
+    // ── 曲线 ──
+    if (curvePts.length > 0) {
+      ctx.beginPath();
+      ctx.moveTo(curvePts[0].x, curvePts[0].y);
+      for (let i = 1; i < curvePts.length; i++) {
+        ctx.lineTo(curvePts[i].x, curvePts[i].y);
+      }
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 3.5;
+      ctx.globalAlpha = isActive ? 1 : 0.6;
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+
+    // ── 数据点圆点 ──
+    pts.forEach(p => {
+      // 外阴影
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, isActive ? 12 : 8, 0, Math.PI * 2);
+      const r2 = parseInt(color.slice(1, 3), 16);
+      const g2 = parseInt(color.slice(3, 5), 16);
+      const b2 = parseInt(color.slice(5, 7), 16);
+      ctx.fillStyle = `rgba(${r2}, ${g2}, ${b2}, 0.15)`;
+      ctx.fill();
+      // 白色填充
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, isActive ? 8 : 6, 0, Math.PI * 2);
+      ctx.fillStyle = '#fff';
+      ctx.fill();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+    });
+
+    // ── X轴节点标签（横写+旋转，放在图表底部，避免被气泡遮挡）──
+    if (line.id === primaryLine.id || (isActive && line.nodes.length === primaryLine.nodes.length)) {
+      const labelFontSize = Math.max(13, Math.min(20, Math.floor(400 / nodeCount)));
+      const maxLabelChars = nodeCount > 8 ? 6 : 12;
+
+      pts.forEach(p => {
+        let label = p.node.name || `节点${p.idx + 1}`;
+        if (label.length > maxLabelChars) label = label.slice(0, maxLabelChars) + '…';
+
+        // 从数据点画一条淡色虚线引到底部标签区
+        ctx.save();
+        ctx.strokeStyle = '#D0D2DC';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        ctx.moveTo(p.x, chartB);
+        ctx.lineTo(p.x, chartB + 14);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+
+        // 横写标签：在chartB下方，旋转-40°（左倾斜）
+        ctx.save();
+        ctx.translate(p.x, chartB + 20);
+        ctx.rotate(-40 * Math.PI / 180);
+        ctx.fillStyle = '#5A5A6E';
+        ctx.font = `600 ${labelFontSize}px "Microsoft YaHei", sans-serif`;
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(label, 0, 0);
+        ctx.restore();
+      });
+    }
+
+    // ── 标注气泡（仅当前活跃线）──
+    if (isActive) {
+      pts.forEach(p => {
+        // 高点亮点
+        if (p.node.highlight) {
+          drawBubble(ctx, p.x, p.y - 30, p.node.highlight,
+            '#E8F0FE', '#A4C4F4', '#1A56DB', 'above');
+        }
+        // 低点问题
+        if (p.node.issue) {
+          drawBubble(ctx, p.x, p.y + 30, p.node.issue,
+            '#FFF3E0', '#FFCC80', '#E66A00', 'below');
+        }
+      });
+
+      // ── 中间段标注气泡 ──
+      for (let i = 0; i < pts.length - 1; i++) {
+        const midText = pts[i].node.midNote;
+        if (!midText) continue;
+
+        const isGood = pts[i].node.midType === 'good';
+        const curr = pts[i], next = pts[i + 1];
+        const midX = (curr.x + next.x) / 2;
+        const midY = (curr.y + next.y) / 2;
+
+        // 菱形标记
+        const markerColor = isGood ? '#416EF2' : '#E66A00';
+        ctx.beginPath();
+        ctx.moveTo(midX, midY - 7);
+        ctx.lineTo(midX + 7, midY);
+        ctx.lineTo(midX, midY + 7);
+        ctx.lineTo(midX - 7, midY);
+        ctx.closePath();
+        ctx.fillStyle = markerColor;
+        ctx.fill();
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        if (isGood) {
+          drawBubble(ctx, midX, midY - 25, midText,
+            '#E8F0FE', '#A4C4F4', '#1A56DB', 'above');
+        } else {
+          drawBubble(ctx, midX, midY + 20, midText,
+            '#FFF3E0', '#FFCC80', '#E66A00', 'below');
+        }
+      }
+    }
+  });
+}
+
+// ── 右上角线条名称图例 ──
+function drawLineLegend(ctx, rightX, topY) {
+  if (lines.length <= 0) return;
+
+  ctx.font = 'bold 20px "Microsoft YaHei", sans-serif';
+  ctx.textAlign = 'right';
+
+  const lineH = 32;
+  const padX = 18, padY = 12;
+  const maxNameW = Math.max(...lines.map(l => ctx.measureText(l.name || '未命名').width));
+  const boxW = maxNameW + 40 + padX * 2; // 40 for color line sample
+  const boxH = lines.length * lineH + padY * 2;
+  const boxX = rightX - boxW;
+  const boxY = topY;
+
+  // 背景框
+  const r = 8;
+  ctx.beginPath();
+  ctx.moveTo(boxX + r, boxY);
+  ctx.lineTo(boxX + boxW - r, boxY);
+  ctx.quadraticCurveTo(boxX + boxW, boxY, boxX + boxW, boxY + r);
+  ctx.lineTo(boxX + boxW, boxY + boxH - r);
+  ctx.quadraticCurveTo(boxX + boxW, boxY + boxH, boxX + boxW - r, boxY + boxH);
+  ctx.lineTo(boxX + r, boxY + boxH);
+  ctx.quadraticCurveTo(boxX, boxY + boxH, boxX, boxY + boxH - r);
+  ctx.lineTo(boxX, boxY + r);
+  ctx.quadraticCurveTo(boxX, boxY, boxX + r, boxY);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+  ctx.fill();
+  ctx.strokeStyle = '#E2E4EC';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // 每条线的图例
+  lines.forEach((line, i) => {
+    const y = boxY + padY + i * lineH + lineH / 2;
+    const x = boxX + padX;
+
+    // 色线段
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + 28, y);
+    ctx.strokeStyle = line.color;
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+
+    // 圆点
+    ctx.beginPath();
+    ctx.arc(x + 14, y, 5, 0, Math.PI * 2);
+    ctx.fillStyle = '#fff';
+    ctx.fill();
+    ctx.strokeStyle = line.color;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // 名称
+    ctx.fillStyle = line.id === activeLineId ? '#2D2D3F' : '#8C8C9A';
+    ctx.font = line.id === activeLineId
+      ? 'bold 20px "Microsoft YaHei", sans-serif'
+      : '20px "Microsoft YaHei", sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(line.name || '未命名', x + 38, y + 7);
+  });
+}
+
+// ── Catmull-Rom 插值（标准实现）──
+function getCurvePoints(pts, tension = 0.3) {
+  if (pts.length < 2) return pts;
+  const result = [];
+  const segments = 30;
+
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[Math.max(0, i - 1)];
+    const p1 = pts[i];
+    const p2 = pts[i + 1];
+    const p3 = pts[Math.min(pts.length - 1, i + 2)];
+
+    for (let s = 0; s <= segments; s++) {
+      const t = s / segments;
+      const pt = catmullRomPoint(p0, p1, p2, p3, t, tension);
+      result.push(pt);
+    }
+  }
+  return result;
+}
+
+function catmullRomPoint(p0, p1, p2, p3, t, tension) {
+  const s = (1 - tension) / 2;
+  const t2 = t * t;
+  const t3 = t2 * t;
+
+  const h00 =  2*t3 - 3*t2 + 1;
+  const h10 =    t3 - 2*t2 + t;
+  const h01 = -2*t3 + 3*t2;
+  const h11 =    t3 -   t2;
+
+  const m1x = s * (p2.x - p0.x);
+  const m1y = s * (p2.y - p0.y);
+  const m2x = s * (p3.x - p1.x);
+  const m2y = s * (p3.y - p1.y);
+
+  return {
+    x: h00 * p1.x + h10 * m1x + h01 * p2.x + h11 * m2x,
+    y: h00 * p1.y + h10 * m1y + h01 * p2.y + h11 * m2y
+  };
+}
+
+function isLocalPeak(pts, i) {
+  const s = pts[i].node.score;
+  const prev = i > 0 ? pts[i - 1].node.score : -Infinity;
+  const next = i < pts.length - 1 ? pts[i + 1].node.score : -Infinity;
+  return s >= prev && s >= next;
+}
+function isLocalValley(pts, i) {
+  const s = pts[i].node.score;
+  const prev = i > 0 ? pts[i - 1].node.score : Infinity;
+  const next = i < pts.length - 1 ? pts[i + 1].node.score : Infinity;
+  return s <= prev && s <= next;
+}
+
+// ── 标注气泡 ──
+function drawBubble(ctx, x, y, text, bgColor, borderColor, textColor, position) {
+  ctx.font = '16px "Microsoft YaHei", sans-serif';
+  const maxWidth = 220;
+  const lines2 = wrapText(ctx, text, maxWidth);
+  const lineH = 22;
+  const padX = 14, padY = 8;
+  const bw = Math.min(maxWidth, Math.max(...lines2.map(l => ctx.measureText(l).width))) + padX * 2;
+  const bh = lines2.length * lineH + padY * 2;
+  const bx = x - bw / 2;
+  const by = position === 'above' ? y - bh - 12 : y + 12;
+
+  // 圆角矩形背景
+  const r = 8;
+  ctx.beginPath();
+  ctx.moveTo(bx + r, by);
+  ctx.lineTo(bx + bw - r, by);
+  ctx.quadraticCurveTo(bx + bw, by, bx + bw, by + r);
+  ctx.lineTo(bx + bw, by + bh - r);
+  ctx.quadraticCurveTo(bx + bw, by + bh, bx + bw - r, by + bh);
+  ctx.lineTo(bx + r, by + bh);
+  ctx.quadraticCurveTo(bx, by + bh, bx, by + bh - r);
+  ctx.lineTo(bx, by + r);
+  ctx.quadraticCurveTo(bx, by, bx + r, by);
+  ctx.closePath();
+  ctx.fillStyle = bgColor;
+  ctx.fill();
+  ctx.strokeStyle = borderColor;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // 文字
+  ctx.fillStyle = textColor;
+  ctx.textAlign = 'center';
+  lines2.forEach((line, i) => {
+    ctx.fillText(line, x, by + padY + (i + 1) * lineH - 4);
+  });
+}
+
+function wrapText(ctx, text, maxWidth) {
+  const words = text.split('');
+  const lines2 = [];
+  let current = '';
+  for (const ch of words) {
+    const test = current + ch;
+    if (ctx.measureText(test).width > maxWidth && current) {
+      lines2.push(current);
+      current = ch;
+    } else {
+      current = test;
+    }
+  }
+  if (current) lines2.push(current);
+  return lines2;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// 导出
+// ══════════════════════════════════════════════════════════════════════════════
+function exportPNG() {
+  const canvas = document.getElementById('chartCanvas');
+  const link = document.createElement('a');
+  link.download = '情绪曲线图.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+  showToast("PNG 已下载");
+}
+
+function exportSVG() {
+  const canvas = document.getElementById('chartCanvas');
+  const dataUrl = canvas.toDataURL('image/png');
+  const svg = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="${canvas.width}" height="${canvas.height}">
+  <image width="${canvas.width}" height="${canvas.height}" xlink:href="${dataUrl}"/>
+</svg>`;
+  const blob = new Blob([svg], { type: 'image/svg+xml' });
+  const link = document.createElement('a');
+  link.download = '情绪曲线图.svg';
+  link.href = URL.createObjectURL(blob);
+  link.click();
+  showToast("SVG 已下载");
+}
+
+// ── Toast ──
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+// ── 启动 ──
+window.addEventListener('DOMContentLoaded', init);
+document.getElementById('chartTitle').addEventListener('input', renderChart);
+</script>
+</body>
+</html>
