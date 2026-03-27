@@ -436,7 +436,7 @@
     <div class="card-body">
       <div class="form-group">
         <label>图表标题</label>
-        <input type="text" id="chartTitle" value="竹林支线心情变化图" placeholder="输入标题...">
+        <input type="text" id="chartTitle" value="" placeholder="请输入图表标题">
       </div>
 
       <!-- 线Tab栏 -->
@@ -572,23 +572,23 @@ function loadSample() {
   nodeIdCounter = 0;
 
   // 第一条线
-  const line1 = addLine("玩家A");
+  const line1 = addLine("线条1");
   line1.nodes = [
-    { id: ++nodeIdCounter, name: "斗笠亭1", score: 2.0, highlight: "", issue: "剧情难理解", midNote: "", midType: "bad" },
-    { id: ++nodeIdCounter, name: "斗笠亭2", score: 2.7, highlight: "", issue: "找不到NPC", midNote: "跑图过程无引导", midType: "bad" },
-    { id: ++nodeIdCounter, name: "斗笠亭3", score: 2.9, highlight: "", issue: "任务指引不清晰", midNote: "过场动画不错", midType: "good" },
-    { id: ++nodeIdCounter, name: "买酒",    score: 2.0, highlight: "", issue: "传送点远，跑图冗长+找不到NPC", midNote: "", midType: "bad" },
-    { id: ++nodeIdCounter, name: "竹林最终战斗", score: 3.0, highlight: "武侠风突出", issue: "", midNote: "", midType: "bad" },
+    { id: ++nodeIdCounter, name: "节点1", score: 2.0, highlight: "", issue: "示例问题标注", midNote: "", midType: "bad" },
+    { id: ++nodeIdCounter, name: "节点2", score: 2.7, highlight: "", issue: "", midNote: "", midType: "bad" },
+    { id: ++nodeIdCounter, name: "节点3", score: 2.9, highlight: "示例亮点标注", issue: "", midNote: "", midType: "bad" },
+    { id: ++nodeIdCounter, name: "节点4", score: 2.0, highlight: "", issue: "", midNote: "", midType: "bad" },
+    { id: ++nodeIdCounter, name: "节点5", score: 3.0, highlight: "", issue: "", midNote: "", midType: "bad" },
   ];
 
   // 第二条线
-  const line2 = addLine("玩家B");
+  const line2 = addLine("线条2");
   line2.nodes = [
-    { id: ++nodeIdCounter, name: "斗笠亭1", score: 2.5, highlight: "画面精美", issue: "", midNote: "", midType: "bad" },
-    { id: ++nodeIdCounter, name: "斗笠亭2", score: 3.2, highlight: "", issue: "", midNote: "", midType: "bad" },
-    { id: ++nodeIdCounter, name: "斗笠亭3", score: 2.3, highlight: "", issue: "战斗太简单", midNote: "", midType: "bad" },
-    { id: ++nodeIdCounter, name: "买酒",    score: 3.5, highlight: "NPC对话有趣", issue: "", midNote: "", midType: "bad" },
-    { id: ++nodeIdCounter, name: "竹林最终战斗", score: 3.8, highlight: "Boss设计精彩", issue: "", midNote: "", midType: "bad" },
+    { id: ++nodeIdCounter, name: "节点1", score: 2.5, highlight: "", issue: "", midNote: "", midType: "bad" },
+    { id: ++nodeIdCounter, name: "节点2", score: 3.2, highlight: "", issue: "", midNote: "", midType: "bad" },
+    { id: ++nodeIdCounter, name: "节点3", score: 2.3, highlight: "", issue: "", midNote: "", midType: "bad" },
+    { id: ++nodeIdCounter, name: "节点4", score: 3.5, highlight: "", issue: "", midNote: "", midType: "bad" },
+    { id: ++nodeIdCounter, name: "节点5", score: 3.8, highlight: "", issue: "", midNote: "", midType: "bad" },
   ];
 
   activeLineId = lines[0].id;
@@ -683,7 +683,7 @@ function renderNodeList() {
       <div class="node-fields">
         <div>
           <div class="field-label">节点名称</div>
-          <input class="node-name-input" type="text" value="${esc(n.name)}" placeholder="节点名称"
+          <input class="node-name-input" type="text" value="${esc(n.name)}" placeholder="请输入节点名称"
             oninput="updateNode(${n.id}, 'name', this.value)">
         </div>
         <div class="score-field">
@@ -694,13 +694,13 @@ function renderNodeList() {
         </div>
         <div class="field-full">
           <div class="field-label">高点亮点（可选）</div>
-          <input type="text" value="${esc(n.highlight)}" placeholder="体验亮点..."
+          <input type="text" value="${esc(n.highlight)}" placeholder="请输入体验亮点"
             oninput="updateNode(${n.id}, 'highlight', this.value)"
             style="border-color: ${n.highlight ? '#A4C4F4' : ''}; background: ${n.highlight ? '#F5F8FF' : ''}">
         </div>
         <div class="field-full">
           <div class="field-label">低点问题（可选）</div>
-          <input type="text" value="${esc(n.issue)}" placeholder="体验问题..."
+          <input type="text" value="${esc(n.issue)}" placeholder="请输入体验问题"
             oninput="updateNode(${n.id}, 'issue', this.value)"
             style="border-color: ${n.issue ? '#FFCC80' : ''}; background: ${n.issue ? '#FFFBF5' : ''}">
         </div>
@@ -716,7 +716,7 @@ function renderNodeList() {
             </div>
           </div>
           <input type="text" value="${esc(n.midNote)}"
-            placeholder="${n.midType === 'good' ? '两节点之间的体验亮点...' : '两节点之间的体验问题...'}"
+            placeholder="${n.midType === 'good' ? '请输入两节点间的体验亮点' : '请输入两节点间的体验问题'}"
             oninput="updateNode(${n.id}, 'midNote', this.value)"
             style="border-color: ${n.midNote ? (n.midType === 'good' ? '#A4C4F4' : '#FFCC80') : ''}; background: ${n.midNote ? (n.midType === 'good' ? '#F5F8FF' : '#FFFBF5') : ''}">
         </div>
